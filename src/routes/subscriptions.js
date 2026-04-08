@@ -40,8 +40,16 @@ router.get('/unsubscribe/:token', async (req, res, next) => {
   }
 });
 
-router.get('/subscriptions', (req, res) => {
-  res.status(501).json({ message: 'Not implemented' });
+router.get('/subscriptions', async (req, res, next) => {
+  try {
+    const subscriptions = await subscriptionService.getSubscriptions(req.query.email);
+    res.status(200).json(subscriptions);
+  } catch (err) {
+    if (err.status) {
+      return res.status(err.status).json({ message: err.message });
+    }
+    next(err);
+  }
 });
 
 module.exports = router;

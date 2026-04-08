@@ -92,4 +92,20 @@ async function unsubscribe(token) {
   await subscriptionRepo.deleteSubscription(subscription.id);
 }
 
-module.exports = { subscribe, confirmSubscription, unsubscribe };
+/**
+ * Get all confirmed subscriptions for a given email address.
+ * @param {string} email
+ * @returns {Promise<Array<{email: string, repo: string, confirmed: boolean, last_seen_tag: string|null}>>}
+ * @throws {Error} 400 if email is invalid
+ */
+async function getSubscriptions(email) {
+  if (!isValidEmail(email)) {
+    const err = new Error('Invalid email');
+    err.status = 400;
+    throw err;
+  }
+
+  return subscriptionRepo.findConfirmedByEmail(email);
+}
+
+module.exports = { subscribe, confirmSubscription, unsubscribe, getSubscriptions };
