@@ -1,8 +1,10 @@
 const subscriptionService = require('../src/services/subscriptionService');
 const githubService = require('../src/services/githubService');
+const emailService = require('../src/services/emailService');
 const subscriptionRepo = require('../src/repositories/subscriptionRepository');
 
 jest.mock('../src/services/githubService');
+jest.mock('../src/services/emailService');
 jest.mock('../src/repositories/subscriptionRepository');
 
 describe('subscriptionService.subscribe', () => {
@@ -41,7 +43,7 @@ describe('subscriptionService.subscribe', () => {
     ).rejects.toMatchObject({ status: 409 });
   });
 
-  test('creates subscription successfully', async () => {
+  test('creates subscription and sends confirmation email', async () => {
     githubService.checkRepoExists.mockResolvedValue(true);
     subscriptionRepo.findByEmailAndRepo.mockResolvedValue(null);
     subscriptionRepo.create.mockResolvedValue({
@@ -50,6 +52,7 @@ describe('subscriptionService.subscribe', () => {
       repo: 'owner/repo',
       confirmed: false,
     });
+    emailService.sendConfirmationEmail.mockResolvedValue();
 
     const result = await subscriptionService.subscribe('test@example.com', 'owner/repo');
 
@@ -61,6 +64,11 @@ describe('subscriptionService.subscribe', () => {
         confirmToken: expect.any(String),
         unsubscribeToken: expect.any(String),
       })
+    );
+    expect(emailService.sendConfirmationEmail).toHaveBeenCalledWith(
+      'test@example.com',
+      'owner/repo',
+      expect.any(String)
     );
   });
 
