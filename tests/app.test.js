@@ -2,14 +2,7 @@ const request = require('supertest');
 const app = require('../src/app');
 
 describe('App setup', () => {
-  test('POST /api/subscribe returns 501 (not yet implemented)', async () => {
-    const res = await request(app)
-      .post('/api/subscribe')
-      .send({ email: 'test@example.com', repo: 'owner/repo' });
-    expect(res.status).toBe(501);
-  });
-
-  test('GET /api/confirm/:token returns 501', async () => {
+  test('GET /api/confirm/:token returns 501 (not yet implemented)', async () => {
     const res = await request(app).get('/api/confirm/some-token');
     expect(res.status).toBe(501);
   });
