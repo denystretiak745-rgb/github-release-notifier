@@ -1,6 +1,7 @@
 const crypto = require('crypto');
 const { isValidRepo, isValidEmail } = require('../utils/validators');
 const githubService = require('./githubService');
+const emailService = require('./emailService');
 const subscriptionRepo = require('../repositories/subscriptionRepository');
 
 /**
@@ -41,6 +42,17 @@ async function subscribe(email, repo) {
     confirmToken,
     unsubscribeToken,
   });
+
+  try {
+    await emailService.sendConfirmationEmail(email, repo, confirmToken);
+  } catch (error) {
+    try {
+      await subscriptionRepo.deleteSubscription(subscription.id);
+    } catch (rollbackError) {
+      error.rollbackError = rollbackError;
+    }
+    throw error;
+  }
 
   return subscription;
 }

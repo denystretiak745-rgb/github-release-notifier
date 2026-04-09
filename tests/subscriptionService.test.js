@@ -1,8 +1,10 @@
 const subscriptionService = require('../src/services/subscriptionService');
 const githubService = require('../src/services/githubService');
+const emailService = require('../src/services/emailService');
 const subscriptionRepo = require('../src/repositories/subscriptionRepository');
 
 jest.mock('../src/services/githubService');
+jest.mock('../src/services/emailService');
 jest.mock('../src/repositories/subscriptionRepository');
 
 describe('subscriptionService.subscribe', () => {
@@ -41,7 +43,7 @@ describe('subscriptionService.subscribe', () => {
     ).rejects.toMatchObject({ status: 409 });
   });
 
-  test('creates subscription successfully', async () => {
+  test('creates subscription and sends confirmation email', async () => {
     githubService.checkRepoExists.mockResolvedValue(true);
     subscriptionRepo.findByEmailAndRepo.mockResolvedValue(null);
     subscriptionRepo.create.mockResolvedValue({
@@ -50,6 +52,7 @@ describe('subscriptionService.subscribe', () => {
       repo: 'owner/repo',
       confirmed: false,
     });
+    emailService.sendConfirmationEmail.mockResolvedValue();
 
     const result = await subscriptionService.subscribe('test@example.com', 'owner/repo');
 
@@ -62,6 +65,30 @@ describe('subscriptionService.subscribe', () => {
         unsubscribeToken: expect.any(String),
       })
     );
+    expect(emailService.sendConfirmationEmail).toHaveBeenCalledWith(
+      'test@example.com',
+      'owner/repo',
+      expect.any(String)
+    );
+  });
+
+  test('rolls back subscription if confirmation email fails', async () => {
+    githubService.checkRepoExists.mockResolvedValue(true);
+    subscriptionRepo.findByEmailAndRepo.mockResolvedValue(null);
+    subscriptionRepo.create.mockResolvedValue({
+      id: 42,
+      email: 'test@example.com',
+      repo: 'owner/repo',
+      confirmed: false,
+    });
+    emailService.sendConfirmationEmail.mockRejectedValue(new Error('SMTP down'));
+    subscriptionRepo.deleteSubscription.mockResolvedValue();
+
+    await expect(
+      subscriptionService.subscribe('test@example.com', 'owner/repo')
+    ).rejects.toThrow('SMTP down');
+
+    expect(subscriptionRepo.deleteSubscription).toHaveBeenCalledWith(42);
   });
 
   test('propagates GitHub 429 rate limit error', async () => {
