@@ -50,6 +50,21 @@ describe('emailService', () => {
       expect(call.html).toContain('/api/unsubscribe/unsub-token-456');
     });
 
+    test('escapes HTML in repo and tag names', async () => {
+      await emailService.sendReleaseNotification(
+        'user@example.com',
+        '<script>alert("xss")</script>',
+        '<img onerror=alert(1)>',
+        'https://github.com/owner/repo/releases/tag/v1',
+        'token-1'
+      );
+
+      const call = mockTransporter.sendMail.mock.calls[0][0];
+      expect(call.html).not.toContain('<script>');
+      expect(call.html).not.toContain('<img');
+      expect(call.html).toContain('&lt;script&gt;');
+    });
+
     test('includes unsubscribe link in email body', async () => {
       await emailService.sendReleaseNotification(
         'user@example.com',

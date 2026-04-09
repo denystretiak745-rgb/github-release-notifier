@@ -1,5 +1,6 @@
 const nodemailer = require('nodemailer');
 const env = require('../config/env');
+const { escapeHtml } = require('../utils/html');
 
 let transporter = null;
 
@@ -39,7 +40,8 @@ function setTransporter(mock) {
  * @returns {Promise<void>}
  */
 async function sendConfirmationEmail(to, repo, confirmToken) {
-  const confirmUrl = `${env.appBaseUrl}/api/confirm/${confirmToken}`;
+  const confirmUrl = `${env.appBaseUrl}/api/confirm/${encodeURIComponent(confirmToken)}`;
+  const safeRepo = escapeHtml(repo);
 
   await getTransporter().sendMail({
     from: env.smtp.user,
@@ -47,9 +49,9 @@ async function sendConfirmationEmail(to, repo, confirmToken) {
     subject: `Confirm your subscription to ${repo} releases`,
     html: `
       <h2>Confirm your subscription</h2>
-      <p>You've requested to receive release notifications for <strong>${repo}</strong>.</p>
+      <p>You've requested to receive release notifications for <strong>${safeRepo}</strong>.</p>
       <p>Click the link below to confirm your subscription:</p>
-      <p><a href="${confirmUrl}">${confirmUrl}</a></p>
+      <p><a href="${confirmUrl}">${escapeHtml(confirmUrl)}</a></p>
       <p>If you didn't request this, you can ignore this email.</p>
     `,
   });
@@ -65,18 +67,21 @@ async function sendConfirmationEmail(to, repo, confirmToken) {
  * @returns {Promise<void>}
  */
 async function sendReleaseNotification(to, repo, tagName, releaseUrl, unsubscribeToken) {
-  const unsubscribeUrl = `${env.appBaseUrl}/api/unsubscribe/${unsubscribeToken}`;
+  const unsubscribeUrl = `${env.appBaseUrl}/api/unsubscribe/${encodeURIComponent(unsubscribeToken)}`;
+  const safeRepo = escapeHtml(repo);
+  const safeTag = escapeHtml(tagName);
+  const safeReleaseUrl = escapeHtml(releaseUrl);
 
   await getTransporter().sendMail({
     from: env.smtp.user,
     to,
     subject: `New release: ${repo} ${tagName}`,
     html: `
-      <h2>New release for ${repo}</h2>
-      <p>A new release <strong>${tagName}</strong> has been published.</p>
-      <p><a href="${releaseUrl}">View release on GitHub</a></p>
+      <h2>New release for ${safeRepo}</h2>
+      <p>A new release <strong>${safeTag}</strong> has been published.</p>
+      <p><a href="${safeReleaseUrl}">View release on GitHub</a></p>
       <hr>
-      <p><small><a href="${unsubscribeUrl}">Unsubscribe</a> from ${repo} release notifications.</small></p>
+      <p><small><a href="${unsubscribeUrl}">Unsubscribe</a> from ${safeRepo} release notifications.</small></p>
     `,
   });
 }

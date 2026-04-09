@@ -72,6 +72,25 @@ describe('subscriptionService.subscribe', () => {
     );
   });
 
+  test('rolls back subscription if confirmation email fails', async () => {
+    githubService.checkRepoExists.mockResolvedValue(true);
+    subscriptionRepo.findByEmailAndRepo.mockResolvedValue(null);
+    subscriptionRepo.create.mockResolvedValue({
+      id: 42,
+      email: 'test@example.com',
+      repo: 'owner/repo',
+      confirmed: false,
+    });
+    emailService.sendConfirmationEmail.mockRejectedValue(new Error('SMTP down'));
+    subscriptionRepo.deleteSubscription.mockResolvedValue();
+
+    await expect(
+      subscriptionService.subscribe('test@example.com', 'owner/repo')
+    ).rejects.toThrow('SMTP down');
+
+    expect(subscriptionRepo.deleteSubscription).toHaveBeenCalledWith(42);
+  });
+
   test('propagates GitHub 429 rate limit error', async () => {
     const rateLimitErr = new Error('GitHub rate limit exceeded');
     rateLimitErr.status = 429;

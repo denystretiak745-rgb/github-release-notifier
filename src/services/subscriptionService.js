@@ -43,7 +43,16 @@ async function subscribe(email, repo) {
     unsubscribeToken,
   });
 
-  await emailService.sendConfirmationEmail(email, repo, confirmToken);
+  try {
+    await emailService.sendConfirmationEmail(email, repo, confirmToken);
+  } catch (error) {
+    try {
+      await subscriptionRepo.deleteSubscription(subscription.id);
+    } catch (rollbackError) {
+      error.rollbackError = rollbackError;
+    }
+    throw error;
+  }
 
   return subscription;
 }
