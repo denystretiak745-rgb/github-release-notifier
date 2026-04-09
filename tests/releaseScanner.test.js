@@ -83,7 +83,7 @@ describe('releaseScanner.scan', () => {
     expect(emailService.sendReleaseNotification).not.toHaveBeenCalled();
   });
 
-  test('continues scanning other repos when one email fails', async () => {
+  test('continues notifying other subscribers when one email fails', async () => {
     subscriptionRepo.findAllConfirmed.mockResolvedValue([
       { id: 1, email: 'fail@test.com', repo: 'owner/repo', last_seen_tag: null, unsubscribe_token: 'tok-1' },
       { id: 2, email: 'ok@test.com', repo: 'owner/repo', last_seen_tag: null, unsubscribe_token: 'tok-2' },
@@ -139,5 +139,50 @@ describe('releaseScanner.scan', () => {
 
     expect(emailService.sendReleaseNotification).toHaveBeenCalledTimes(1);
     expect(subscriptionRepo.updateLastSeenTag).toHaveBeenCalledWith(1, 'v3.0.0');
+  });
+});
+
+describe('releaseScanner.start/stop lifecycle', () => {
+  beforeEach(() => {
+    jest.useFakeTimers();
+    jest.clearAllMocks();
+    subscriptionRepo.findAllConfirmed.mockResolvedValue([]);
+    releaseScanner.stop();
+  });
+
+  afterEach(() => {
+    releaseScanner.stop();
+    jest.useRealTimers();
+  });
+
+  test('start() schedules only one loop even if called twice', () => {
+    releaseScanner.start();
+    releaseScanner.start();
+
+    jest.advanceTimersByTime(600000);
+
+    expect(subscriptionRepo.findAllConfirmed).toHaveBeenCalledTimes(1);
+  });
+
+  test('stop() clears the scheduled scan', async () => {
+    releaseScanner.start();
+
+    await Promise.resolve();
+
+    releaseScanner.stop();
+    jest.advanceTimersByTime(600000);
+
+    expect(subscriptionRepo.findAllConfirmed).toHaveBeenCalledTimes(1);
+  });
+
+  test('start() can be called again after stop()', async () => {
+    releaseScanner.start();
+    await Promise.resolve();
+    releaseScanner.stop();
+
+    releaseScanner.start();
+    await Promise.resolve();
+
+    expect(subscriptionRepo.findAllConfirmed).toHaveBeenCalledTimes(2);
   });
 });

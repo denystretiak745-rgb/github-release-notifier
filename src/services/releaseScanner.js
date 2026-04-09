@@ -3,7 +3,8 @@ const githubService = require('./githubService');
 const emailService = require('./emailService');
 const env = require('../config/env');
 
-let intervalId = null;
+let timeoutId = null;
+let running = false;
 
 /**
  * Scan all confirmed subscriptions for new releases.
@@ -48,8 +49,9 @@ async function scan() {
       }
     } catch (err) {
       if (err.status === 429) {
-        const waitMs = (err.retryAfter ?? 60) * 1000;
-        console.warn(`GitHub rate limit hit. Pausing scanner for ${waitMs / 1000}s`);
+        const retryAfterSeconds = Number.isFinite(err.retryAfter) ? err.retryAfter : 60;
+        const waitMs = retryAfterSeconds * 1000;
+        console.warn(`GitHub rate limit hit. Pausing scanner for ${retryAfterSeconds}s`);
         await new Promise((resolve) => setTimeout(resolve, waitMs));
       } else {
         console.error(`Failed to check releases for ${repo}:`, err.message);
@@ -59,19 +61,40 @@ async function scan() {
 }
 
 /**
- * Start the background release scanner on a fixed interval.
+ * Schedule the next scan cycle after the current one completes.
+ * Uses setTimeout instead of setInterval to prevent overlapping scans.
+ * @returns {void}
+ */
+function scheduleNext() {
+  timeoutId = setTimeout(async () => {
+    try {
+      await scan();
+    } catch (err) {
+      console.error('Scan cycle failed:', err.message);
+    }
+    if (running) {
+      scheduleNext();
+    }
+  }, env.scanIntervalMs);
+}
+
+/**
+ * Start the background release scanner.
+ * Runs an initial scan immediately, then schedules subsequent scans
+ * using setTimeout to avoid overlapping cycles.
  * @returns {void}
  */
 function start() {
-  if (intervalId) return;
+  if (running) return;
+  running = true;
 
   console.log(`Release scanner started (interval: ${env.scanIntervalMs}ms)`);
 
-  scan().catch((err) => console.error('Initial scan failed:', err.message));
-
-  intervalId = setInterval(() => {
-    scan().catch((err) => console.error('Scan cycle failed:', err.message));
-  }, env.scanIntervalMs);
+  scan()
+    .catch((err) => console.error('Initial scan failed:', err.message))
+    .finally(() => {
+      if (running) scheduleNext();
+    });
 }
 
 /**
@@ -79,9 +102,10 @@ function start() {
  * @returns {void}
  */
 function stop() {
-  if (intervalId) {
-    clearInterval(intervalId);
-    intervalId = null;
+  running = false;
+  if (timeoutId) {
+    clearTimeout(timeoutId);
+    timeoutId = null;
   }
 }
 
