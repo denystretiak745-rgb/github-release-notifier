@@ -53,7 +53,7 @@ The API will be available at `http://localhost:3000`.
 npm install
 
 # Start PostgreSQL (via Docker or locally)
-docker compose up db -d
+docker compose up -d db
 
 # Create .env from example
 cp .env.example .env

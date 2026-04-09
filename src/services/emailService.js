@@ -9,7 +9,14 @@ let transporter = null;
  * @returns {boolean}
  */
 function isSmtpConfigured() {
-  return Boolean(env.smtp.host && env.smtp.user);
+  const port = Number(env.smtp.port);
+  return Boolean(
+    env.smtp.host &&
+    env.smtp.user &&
+    env.smtp.pass &&
+    Number.isInteger(port) &&
+    port > 0
+  );
 }
 
 /**
@@ -56,7 +63,7 @@ async function sendConfirmationEmail(to, repo, confirmToken) {
 
   const transport = getTransporter();
   if (!transport) {
-    console.warn(`[email] SMTP not configured. Confirmation email for ${to} → ${repo} skipped. Confirm link: ${confirmUrl}`);
+    console.warn(`[email] SMTP not configured. Confirmation email for ${to} → ${repo} skipped.`);
     return;
   }
 
