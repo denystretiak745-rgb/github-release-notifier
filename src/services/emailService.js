@@ -5,12 +5,30 @@ const { escapeHtml } = require('../utils/html');
 let transporter = null;
 
 /**
+ * Whether SMTP is configured. When false, emails are logged instead of sent.
+ * @returns {boolean}
+ */
+function isSmtpConfigured() {
+  const port = Number(env.smtp.port);
+  return Boolean(
+    env.smtp.host &&
+    env.smtp.user &&
+    env.smtp.pass &&
+    Number.isInteger(port) &&
+    port > 0
+  );
+}
+
+/**
  * Get or create the nodemailer transport.
  * Lazily initialized so tests can replace it before first use.
- * @returns {import('nodemailer').Transporter}
+ * @returns {import('nodemailer').Transporter|null}
  */
 function getTransporter() {
   if (!transporter) {
+    if (!isSmtpConfigured()) {
+      return null;
+    }
     transporter = nodemailer.createTransport({
       host: env.smtp.host,
       port: env.smtp.port,
@@ -43,7 +61,13 @@ async function sendConfirmationEmail(to, repo, confirmToken) {
   const confirmUrl = `${env.appBaseUrl}/api/confirm/${encodeURIComponent(confirmToken)}`;
   const safeRepo = escapeHtml(repo);
 
-  await getTransporter().sendMail({
+  const transport = getTransporter();
+  if (!transport) {
+    console.warn(`[email] SMTP not configured. Confirmation email for ${to} → ${repo} skipped.`);
+    return;
+  }
+
+  await transport.sendMail({
     from: env.smtp.user,
     to,
     subject: `Confirm your subscription to ${repo} releases`,
@@ -72,7 +96,13 @@ async function sendReleaseNotification(to, repo, tagName, releaseUrl, unsubscrib
   const safeTag = escapeHtml(tagName);
   const safeReleaseUrl = escapeHtml(releaseUrl);
 
-  await getTransporter().sendMail({
+  const transport = getTransporter();
+  if (!transport) {
+    console.warn(`[email] SMTP not configured. Release notification for ${to} → ${repo} ${tagName} skipped.`);
+    return;
+  }
+
+  await transport.sendMail({
     from: env.smtp.user,
     to,
     subject: `New release: ${repo} ${tagName}`,
