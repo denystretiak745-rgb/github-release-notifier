@@ -1,5 +1,6 @@
 const env = require('../config/env');
 const { getClient } = require('../config/redis');
+const { githubApiRequestsTotal } = require('../metrics');
 
 const CACHE_TTL = 600; // 10 minutes
 
@@ -48,6 +49,7 @@ async function checkRepoExists(repo) {
   }
 
   const res = await fetch(`https://api.github.com/repos/${repo}`, { headers });
+  githubApiRequestsTotal.inc({ endpoint: 'repos', status: res.status });
 
   if (res.status === 200) {
     await cacheSet(cacheKey, 'true');
@@ -86,6 +88,7 @@ async function getLatestRelease(repo) {
   }
 
   const res = await fetch(`https://api.github.com/repos/${repo}/releases/latest`, { headers });
+  githubApiRequestsTotal.inc({ endpoint: 'releases', status: res.status });
 
   if (res.status === 200) {
     const data = await res.json();
