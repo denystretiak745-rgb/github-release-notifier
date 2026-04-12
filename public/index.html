@@ -4,7 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>GitHub Release Notifier</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH"
+        crossorigin="anonymous">
   <style>
     body { background-color: #f8f9fa; }
     .hero { padding: 3rem 0 1.5rem; }
@@ -20,7 +22,7 @@
   </nav>
 
   <div class="container hero">
-    <div id="global-alert" class="d-none"></div>
+    <div id="global-alert" class="d-none" role="alert" aria-live="assertive" aria-atomic="true"></div>
   </div>
 
   <div class="container mb-5">
@@ -66,25 +68,34 @@
     </div>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+          integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
+          crossorigin="anonymous"></script>
   <script>
     const alertBox = document.getElementById('global-alert');
 
     function showAlert(message, type) {
       alertBox.className = `alert alert-${type} alert-dismissible fade show`;
-      alertBox.innerHTML = `${message}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>`;
+      alertBox.textContent = message;
+
+      const dismissBtn = document.createElement('button');
+      dismissBtn.type = 'button';
+      dismissBtn.className = 'btn-close';
+      dismissBtn.setAttribute('data-bs-dismiss', 'alert');
+      dismissBtn.setAttribute('aria-label', 'Close');
+      alertBox.appendChild(dismissBtn);
     }
 
     function clearAlert() {
       alertBox.className = 'd-none';
-      alertBox.innerHTML = '';
+      alertBox.textContent = '';
     }
 
     function setLoading(btn, loading) {
       if (loading) {
         btn.dataset.originalText = btn.textContent;
         btn.disabled = true;
-        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Loading…';
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Loading\u2026';
       } else {
         btn.disabled = false;
         btn.textContent = btn.dataset.originalText || btn.textContent;
@@ -163,7 +174,7 @@
           const unsubBtn = document.createElement('button');
           unsubBtn.className = 'btn btn-outline-danger btn-sm';
           unsubBtn.textContent = 'Unsubscribe';
-          unsubBtn.addEventListener('click', () => handleUnsubscribe(sub.unsubscribe_token, email));
+          unsubBtn.addEventListener('click', () => handleUnsubscribe(email, sub.repo));
 
           li.appendChild(repoLink);
           li.appendChild(unsubBtn);
@@ -183,10 +194,14 @@
       loadSubscriptions();
     });
 
-    async function handleUnsubscribe(token, email) {
+    async function handleUnsubscribe(email, repo) {
       clearAlert();
       try {
-        const res = await fetch(`/api/unsubscribe/${encodeURIComponent(token)}`);
+        const res = await fetch('/api/subscriptions', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, repo }),
+        });
         const data = await res.json();
         if (res.ok) {
           showAlert(data.message, 'success');

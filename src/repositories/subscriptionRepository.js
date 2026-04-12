@@ -95,11 +95,11 @@ async function deleteSubscription(id) {
 /**
  * Find all confirmed subscriptions for a given email.
  * @param {string} email
- * @returns {Promise<Array<{email: string, repo: string, confirmed: boolean, unsubscribe_token: string, last_seen_tag: string|null}>>}
+ * @returns {Promise<Array<{email: string, repo: string, confirmed: boolean, last_seen_tag: string|null}>>}
  */
 async function findConfirmedByEmail(email) {
   const { rows } = await db.query(
-    'SELECT email, repo, confirmed, unsubscribe_token, last_seen_tag FROM subscriptions WHERE email = $1 AND confirmed = TRUE',
+    'SELECT email, repo, confirmed, last_seen_tag FROM subscriptions WHERE email = $1 AND confirmed = TRUE',
     [email]
   );
   return rows;

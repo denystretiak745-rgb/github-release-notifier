@@ -52,4 +52,17 @@ router.get('/subscriptions', async (req, res, next) => {
   }
 });
 
+router.delete('/subscriptions', async (req, res, next) => {
+  try {
+    const { email, repo } = req.body;
+    await subscriptionService.removeSubscription(email, repo);
+    res.status(200).json({ message: 'Unsubscribed successfully' });
+  } catch (err) {
+    if (err.status) {
+      return res.status(err.status).json({ message: err.message });
+    }
+    next(err);
+  }
+});
+
 module.exports = router;

@@ -107,7 +107,7 @@ async function unsubscribe(token) {
 /**
  * Get all confirmed subscriptions for a given email address.
  * @param {string} email
- * @returns {Promise<Array<{email: string, repo: string, confirmed: boolean, unsubscribe_token: string, last_seen_tag: string|null}>>}
+ * @returns {Promise<Array<{email: string, repo: string, confirmed: boolean, last_seen_tag: string|null}>>}
  * @throws {Error} 400 if email is invalid
  */
 async function getSubscriptions(email) {
@@ -120,4 +120,29 @@ async function getSubscriptions(email) {
   return subscriptionRepo.findConfirmedByEmail(email);
 }
 
-module.exports = { subscribe, confirmSubscription, unsubscribe, getSubscriptions };
+/**
+ * Remove a confirmed subscription by email and repo.
+ * Used by the frontend to unsubscribe without exposing tokens.
+ * @param {string} email
+ * @param {string} repo - GitHub repository in owner/repo format
+ * @returns {Promise<void>}
+ * @throws {Error} 400 if input is invalid, 404 if subscription not found
+ */
+async function removeSubscription(email, repo) {
+  if (!isValidEmail(email) || !isValidRepo(repo)) {
+    const err = new Error('Invalid input');
+    err.status = 400;
+    throw err;
+  }
+
+  const subscription = await subscriptionRepo.findByEmailAndRepo(email, repo);
+  if (!subscription || !subscription.confirmed) {
+    const err = new Error('Subscription not found');
+    err.status = 404;
+    throw err;
+  }
+
+  await subscriptionRepo.deleteSubscription(subscription.id);
+}
+
+module.exports = { subscribe, confirmSubscription, unsubscribe, getSubscriptions, removeSubscription };
