@@ -25,6 +25,12 @@ services:
       timeout: 5s
       retries: 5
 
+  mailpit:
+    image: axllent/mailpit
+    ports:
+      - "127.0.0.1:8025:8025"
+      - "127.0.0.1:1025:1025"
+
   app:
     build: .
     ports:
@@ -39,10 +45,10 @@ services:
       PORT: 3000
       DATABASE_URL: ${DATABASE_URL:-postgresql://postgres:postgres@db:5432/release_notifier}
       GITHUB_TOKEN: ${GITHUB_TOKEN:-}
-      SMTP_HOST: ${SMTP_HOST:-}
-      SMTP_PORT: ${SMTP_PORT:-587}
-      SMTP_USER: ${SMTP_USER:-}
-      SMTP_PASS: ${SMTP_PASS:-}
+      SMTP_HOST: ${SMTP_HOST:-mailpit}
+      SMTP_PORT: ${SMTP_PORT:-1025}
+      SMTP_USER: ${SMTP_USER:-notifier@localhost}
+      SMTP_PASS: ${SMTP_PASS:-notifier}
       APP_BASE_URL: ${APP_BASE_URL:-http://localhost:3000}
       SCAN_INTERVAL_MS: ${SCAN_INTERVAL_MS:-300000}
       REDIS_URL: ${REDIS_URL:-redis://redis:6379}
