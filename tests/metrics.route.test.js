@@ -18,9 +18,11 @@ describe('GET /metrics', () => {
     const originalKeys = env.apiKeys;
     env.apiKeys = ['test-secret-key'];
 
-    const res = await request(app).get('/metrics');
-    expect(res.status).toBe(200);
-
-    env.apiKeys = originalKeys;
+    try {
+      const res = await request(app).get('/metrics');
+      expect(res.status).toBe(200);
+    } finally {
+      env.apiKeys = originalKeys;
+    }
   });
 });

@@ -1,6 +1,7 @@
 const {
   register,
   metricsMiddleware,
+  getRouteLabel,
   httpRequestsTotal,
   httpRequestDuration,
   githubApiRequestsTotal,
@@ -12,8 +13,12 @@ afterEach(() => {
 });
 
 describe('metricsMiddleware', () => {
-  it('increments http_requests_total on response finish', () => {
-    const req = { method: 'GET', path: '/api/subscriptions' };
+  it('increments http_requests_total and records duration on response finish', async () => {
+    const req = {
+      method: 'GET',
+      baseUrl: '/api',
+      route: { path: '/subscriptions' },
+    };
     const listeners = {};
     const res = {
       statusCode: 200,
@@ -27,6 +32,30 @@ describe('metricsMiddleware', () => {
     expect(next).toHaveBeenCalled();
 
     listeners.finish();
+
+    const metrics = await register.getMetricsAsJSON();
+    const counter = metrics.find((m) => m.name === 'http_requests_total');
+    expect(counter).toBeDefined();
+    const entry = counter.values.find(
+      (v) => v.labels.method === 'GET' && v.labels.route === '/api/subscriptions' && v.labels.status === 200
+    );
+    expect(entry).toBeDefined();
+    expect(entry.value).toBe(1);
+
+    const histogram = metrics.find((m) => m.name === 'http_request_duration_seconds');
+    expect(histogram).toBeDefined();
+    expect(histogram.values.length).toBeGreaterThan(0);
+  });
+});
+
+describe('getRouteLabel', () => {
+  it('returns Express route template when available', () => {
+    const req = { baseUrl: '/api', route: { path: '/confirm/:token' } };
+    expect(getRouteLabel(req)).toBe('/api/confirm/:token');
+  });
+
+  it('returns "unknown" when no route is matched', () => {
+    expect(getRouteLabel({})).toBe('unknown');
   });
 });
 

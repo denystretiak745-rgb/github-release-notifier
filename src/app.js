@@ -8,7 +8,6 @@ const { register, metricsMiddleware } = require('./metrics');
 
 const app = express();
 
-app.use(metricsMiddleware);
 app.use(requestLogger);
 app.use(express.static(path.join(__dirname, '..', 'public')));
 app.use(express.json());
@@ -19,7 +18,7 @@ app.get('/metrics', async (_req, res) => {
   res.send(await register.metrics());
 });
 
-app.use('/api', apiKeyAuth, subscriptionRoutes);
+app.use('/api', metricsMiddleware, apiKeyAuth, subscriptionRoutes);
 
 app.use(errorHandler);
 

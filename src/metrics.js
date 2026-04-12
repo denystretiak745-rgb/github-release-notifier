@@ -28,17 +28,33 @@ const releaseScanDuration = new client.Histogram({
 });
 
 /**
+ * Derive a stable, low-cardinality route label from the Express request.
+ * Uses the matched route template (e.g. "/confirm/:token") to avoid
+ * leaking dynamic segments and creating unbounded metric series.
+ * @param {import('express').Request} req
+ * @returns {string}
+ */
+function getRouteLabel(req) {
+  if (req.route && req.route.path) {
+    return `${req.baseUrl || ''}${req.route.path}`;
+  }
+  return 'unknown';
+}
+
+/**
  * Express middleware to record request duration and count.
+ * Should be mounted on /api to avoid tracking static assets and /metrics scrapes.
  * @param {import('express').Request} req
  * @param {import('express').Response} res
  * @param {import('express').NextFunction} next
  */
 function metricsMiddleware(req, res, next) {
-  const end = httpRequestDuration.startTimer({ method: req.method, route: req.path });
+  const end = httpRequestDuration.startTimer({ method: req.method });
 
   res.on('finish', () => {
-    end();
-    httpRequestsTotal.inc({ method: req.method, route: req.path, status: res.statusCode });
+    const route = getRouteLabel(req);
+    end({ route });
+    httpRequestsTotal.inc({ method: req.method, route, status: res.statusCode });
   });
 
   next();
@@ -47,6 +63,7 @@ function metricsMiddleware(req, res, next) {
 module.exports = {
   register: client.register,
   metricsMiddleware,
+  getRouteLabel,
   httpRequestsTotal,
   httpRequestDuration,
   githubApiRequestsTotal,
