@@ -16,5 +16,8 @@ module.exports = {
   redisUrl: process.env.REDIS_URL || '',
   appBaseUrl: process.env.APP_BASE_URL || 'http://localhost:3000',
   scanIntervalMs: parseInt(process.env.SCAN_INTERVAL_MS, 10) || 300000,
+  grpcEnabled: process.env.GRPC_ENABLED !== undefined
+    ? process.env.GRPC_ENABLED === 'true'
+    : process.env.NODE_ENV !== 'production',
   grpcPort: parseInt(process.env.GRPC_PORT, 10) || 50051,
 };

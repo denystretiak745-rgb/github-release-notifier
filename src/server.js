@@ -12,7 +12,13 @@ async function start() {
     releaseScanner.start();
   });
 
-  await startGrpcServer(env.grpcPort);
+  if (env.grpcEnabled) {
+    try {
+      await startGrpcServer(env.grpcPort);
+    } catch (err) {
+      console.warn('gRPC server failed to start:', err?.stack ?? err);
+    }
+  }
 }
 
 start().catch((err) => {
