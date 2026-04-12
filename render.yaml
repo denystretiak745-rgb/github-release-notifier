@@ -1,0 +1,37 @@
+databases:
+  - name: release-notifier-db
+    plan: free
+    databaseName: release_notifier
+    user: release_notifier_user
+
+services:
+  - type: web
+    name: github-release-notifier
+    runtime: node
+    plan: free
+    buildCommand: npm ci
+    startCommand: node src/server.js
+    healthCheckPath: /api/subscriptions?email=healthcheck@test.com
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: release-notifier-db
+          property: connectionString
+      - key: APP_BASE_URL
+        sync: false
+      - key: GITHUB_TOKEN
+        sync: false
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_PORT
+        value: "587"
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
+        sync: false
+      - key: SCAN_INTERVAL_MS
+        value: "300000"
