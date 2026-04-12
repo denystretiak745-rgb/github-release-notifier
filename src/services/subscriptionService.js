@@ -1,5 +1,5 @@
 const crypto = require('crypto');
-const { isValidRepo, isValidEmail } = require('../utils/validators');
+const { isValidEmail, parseRepo } = require('../utils/validators');
 const githubService = require('./githubService');
 const emailService = require('./emailService');
 const subscriptionRepo = require('../repositories/subscriptionRepository');
@@ -12,8 +12,9 @@ const subscriptionRepo = require('../repositories/subscriptionRepository');
  * @returns {Promise<import('../repositories/subscriptionRepository').Subscription>}
  * @throws {Error} 400 if input is invalid, 404 if repo not found, 409 if already subscribed
  */
-async function subscribe(email, repo) {
-  if (!isValidEmail(email) || !isValidRepo(repo)) {
+async function subscribe(email, rawRepo) {
+  const repo = parseRepo(rawRepo);
+  if (!isValidEmail(email) || !repo) {
     const err = new Error('Invalid input');
     err.status = 400;
     throw err;
@@ -120,4 +121,30 @@ async function getSubscriptions(email) {
   return subscriptionRepo.findConfirmedByEmail(email);
 }
 
-module.exports = { subscribe, confirmSubscription, unsubscribe, getSubscriptions };
+/**
+ * Remove a confirmed subscription by email and repo.
+ * Used by the frontend to unsubscribe without exposing tokens.
+ * @param {string} email
+ * @param {string} repo - GitHub repository in owner/repo format
+ * @returns {Promise<void>}
+ * @throws {Error} 400 if input is invalid, 404 if subscription not found
+ */
+async function removeSubscription(email, rawRepo) {
+  const repo = parseRepo(rawRepo);
+  if (!isValidEmail(email) || !repo) {
+    const err = new Error('Invalid input');
+    err.status = 400;
+    throw err;
+  }
+
+  const subscription = await subscriptionRepo.findByEmailAndRepo(email, repo);
+  if (!subscription || !subscription.confirmed) {
+    const err = new Error('Subscription not found');
+    err.status = 404;
+    throw err;
+  }
+
+  await subscriptionRepo.deleteSubscription(subscription.id);
+}
+
+module.exports = { subscribe, confirmSubscription, unsubscribe, getSubscriptions, removeSubscription };

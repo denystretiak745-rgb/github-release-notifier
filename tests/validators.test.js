@@ -1,10 +1,47 @@
-const { isValidRepo, isValidEmail } = require('../src/utils/validators');
+const { isValidRepo, isValidEmail, parseRepo } = require('../src/utils/validators');
+
+describe('parseRepo', () => {
+  test('parses plain owner/repo format', () => {
+    expect(parseRepo('golang/go')).toBe('golang/go');
+    expect(parseRepo('facebook/react')).toBe('facebook/react');
+    expect(parseRepo('my-org/my_repo.js')).toBe('my-org/my_repo.js');
+  });
+
+  test('extracts owner/repo from GitHub URL', () => {
+    expect(parseRepo('https://github.com/lodash/lodash')).toBe('lodash/lodash');
+    expect(parseRepo('https://github.com/facebook/react')).toBe('facebook/react');
+    expect(parseRepo('https://github.com/facebook/react/')).toBe('facebook/react');
+    expect(parseRepo('http://github.com/owner/repo')).toBe('owner/repo');
+  });
+
+  test('trims whitespace', () => {
+    expect(parseRepo('  owner/repo  ')).toBe('owner/repo');
+    expect(parseRepo('  https://github.com/owner/repo  ')).toBe('owner/repo');
+  });
+
+  test('returns null for invalid input', () => {
+    expect(parseRepo('golang')).toBeNull();
+    expect(parseRepo('')).toBeNull();
+    expect(parseRepo('a/b/c')).toBeNull();
+    expect(parseRepo(null)).toBeNull();
+    expect(parseRepo(undefined)).toBeNull();
+    expect(parseRepo(123)).toBeNull();
+    expect(parseRepo('owner/ repo')).toBeNull();
+    expect(parseRepo('https://gitlab.com/owner/repo')).toBeNull();
+    expect(parseRepo('https://github.com/owner/repo/extra')).toBeNull();
+  });
+});
 
 describe('isValidRepo', () => {
   test('accepts valid owner/repo format', () => {
     expect(isValidRepo('golang/go')).toBe(true);
     expect(isValidRepo('facebook/react')).toBe(true);
     expect(isValidRepo('my-org/my_repo.js')).toBe(true);
+  });
+
+  test('accepts GitHub URLs', () => {
+    expect(isValidRepo('https://github.com/lodash/lodash')).toBe(true);
+    expect(isValidRepo('https://github.com/facebook/react/')).toBe(true);
   });
 
   test('rejects missing slash', () => {
