@@ -12,6 +12,7 @@ module.exports = {
     user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASS,
   },
+  redisUrl: process.env.REDIS_URL || '',
   appBaseUrl: process.env.APP_BASE_URL || 'http://localhost:3000',
   scanIntervalMs: parseInt(process.env.SCAN_INTERVAL_MS, 10) || 300000,
   grpcPort: parseInt(process.env.GRPC_PORT, 10) || 50051,
