@@ -12,6 +12,7 @@ module.exports = {
     user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASS,
   },
+  apiKeys: process.env.API_KEYS ? process.env.API_KEYS.split(',').map((k) => k.trim()).filter(Boolean) : [],
   redisUrl: process.env.REDIS_URL || '',
   appBaseUrl: process.env.APP_BASE_URL || 'http://localhost:3000',
   scanIntervalMs: parseInt(process.env.SCAN_INTERVAL_MS, 10) || 300000,
