@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GitHub Release Notifier</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body { background-color: #f8f9fa; }
+    .hero { padding: 3rem 0 1.5rem; }
+    .card { border: none; box-shadow: 0 .125rem .25rem rgba(0,0,0,.075); }
+    .repo-item { display: flex; justify-content: space-between; align-items: center; }
+  </style>
+</head>
+<body>
+  <nav class="navbar navbar-dark bg-dark">
+    <div class="container">
+      <span class="navbar-brand mb-0 h1">GitHub Release Notifier</span>
+    </div>
+  </nav>
+
+  <div class="container hero">
+    <div id="global-alert" class="d-none"></div>
+  </div>
+
+  <div class="container mb-5">
+    <div class="row g-4">
+
+      <div class="col-md-6">
+        <div class="card h-100">
+          <div class="card-body">
+            <h5 class="card-title mb-3">Subscribe to Releases</h5>
+            <form id="subscribe-form">
+              <div class="mb-3">
+                <label for="sub-email" class="form-label">Email address</label>
+                <input type="email" class="form-control" id="sub-email" placeholder="you@example.com" required>
+              </div>
+              <div class="mb-3">
+                <label for="sub-repo" class="form-label">Repository</label>
+                <input type="text" class="form-control" id="sub-repo" placeholder="owner/repo" required
+                       pattern="^[a-zA-Z0-9._-]+/[a-zA-Z0-9._-]+$">
+                <div class="form-text">Format: <code>owner/repo</code> (e.g. <code>facebook/react</code>)</div>
+              </div>
+              <button type="submit" class="btn btn-primary w-100" id="sub-btn">Subscribe</button>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-6">
+        <div class="card h-100">
+          <div class="card-body">
+            <h5 class="card-title mb-3">My Subscriptions</h5>
+            <form id="load-form" class="mb-3">
+              <div class="input-group">
+                <input type="email" class="form-control" id="load-email" placeholder="you@example.com" required>
+                <button type="submit" class="btn btn-outline-secondary" id="load-btn">Load</button>
+              </div>
+            </form>
+            <div id="subs-list"></div>
+            <p id="subs-empty" class="text-muted d-none">No confirmed subscriptions found.</p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    const alertBox = document.getElementById('global-alert');
+
+    function showAlert(message, type) {
+      alertBox.className = `alert alert-${type} alert-dismissible fade show`;
+      alertBox.innerHTML = `${message}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>`;
+    }
+
+    function clearAlert() {
+      alertBox.className = 'd-none';
+      alertBox.innerHTML = '';
+    }
+
+    function setLoading(btn, loading) {
+      if (loading) {
+        btn.dataset.originalText = btn.textContent;
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Loading…';
+      } else {
+        btn.disabled = false;
+        btn.textContent = btn.dataset.originalText || btn.textContent;
+      }
+    }
+
+    document.getElementById('subscribe-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      clearAlert();
+
+      const email = document.getElementById('sub-email').value.trim();
+      const repo = document.getElementById('sub-repo').value.trim();
+      const btn = document.getElementById('sub-btn');
+
+      setLoading(btn, true);
+      try {
+        const res = await fetch('/api/subscribe', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, repo }),
+        });
+        const data = await res.json();
+        if (res.ok) {
+          showAlert(data.message, 'success');
+          document.getElementById('subscribe-form').reset();
+        } else {
+          showAlert(data.message, 'danger');
+        }
+      } catch {
+        showAlert('Network error. Please try again.', 'danger');
+      } finally {
+        setLoading(btn, false);
+      }
+    });
+
+    async function loadSubscriptions() {
+      clearAlert();
+      const email = document.getElementById('load-email').value.trim();
+      if (!email) return;
+
+      const btn = document.getElementById('load-btn');
+      const list = document.getElementById('subs-list');
+      const empty = document.getElementById('subs-empty');
+
+      setLoading(btn, true);
+      list.innerHTML = '';
+      empty.classList.add('d-none');
+
+      try {
+        const res = await fetch(`/api/subscriptions?email=${encodeURIComponent(email)}`);
+        if (!res.ok) {
+          const data = await res.json();
+          showAlert(data.message, 'danger');
+          return;
+        }
+
+        const subs = await res.json();
+        if (subs.length === 0) {
+          empty.classList.remove('d-none');
+          return;
+        }
+
+        const ul = document.createElement('ul');
+        ul.className = 'list-group';
+
+        subs.forEach((sub) => {
+          const li = document.createElement('li');
+          li.className = 'list-group-item repo-item';
+
+          const repoLink = document.createElement('a');
+          repoLink.href = `https://github.com/${sub.repo}`;
+          repoLink.target = '_blank';
+          repoLink.rel = 'noopener';
+          repoLink.textContent = sub.repo;
+
+          const unsubBtn = document.createElement('button');
+          unsubBtn.className = 'btn btn-outline-danger btn-sm';
+          unsubBtn.textContent = 'Unsubscribe';
+          unsubBtn.addEventListener('click', () => handleUnsubscribe(sub.unsubscribe_token, email));
+
+          li.appendChild(repoLink);
+          li.appendChild(unsubBtn);
+          ul.appendChild(li);
+        });
+
+        list.appendChild(ul);
+      } catch {
+        showAlert('Network error. Please try again.', 'danger');
+      } finally {
+        setLoading(btn, false);
+      }
+    }
+
+    document.getElementById('load-form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      loadSubscriptions();
+    });
+
+    async function handleUnsubscribe(token, email) {
+      clearAlert();
+      try {
+        const res = await fetch(`/api/unsubscribe/${encodeURIComponent(token)}`);
+        const data = await res.json();
+        if (res.ok) {
+          showAlert(data.message, 'success');
+          document.getElementById('load-email').value = email;
+          await loadSubscriptions();
+        } else {
+          showAlert(data.message, 'danger');
+        }
+      } catch {
+        showAlert('Network error. Please try again.', 'danger');
+      }
+    }
+  </script>
+</body>
+</html>

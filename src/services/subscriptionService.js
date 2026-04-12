@@ -107,7 +107,7 @@ async function unsubscribe(token) {
 /**
  * Get all confirmed subscriptions for a given email address.
  * @param {string} email
- * @returns {Promise<Array<{email: string, repo: string, confirmed: boolean, last_seen_tag: string|null}>>}
+ * @returns {Promise<Array<{email: string, repo: string, confirmed: boolean, unsubscribe_token: string, last_seen_tag: string|null}>>}
  * @throws {Error} 400 if email is invalid
  */
 async function getSubscriptions(email) {
