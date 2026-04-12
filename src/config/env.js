@@ -14,4 +14,5 @@ module.exports = {
   },
   appBaseUrl: process.env.APP_BASE_URL || 'http://localhost:3000',
   scanIntervalMs: parseInt(process.env.SCAN_INTERVAL_MS, 10) || 300000,
+  grpcPort: parseInt(process.env.GRPC_PORT, 10) || 50051,
 };

@@ -23,6 +23,8 @@
   "license": "ISC",
   "description": "API for subscribing to GitHub release notifications via email",
   "dependencies": {
+    "@grpc/grpc-js": "^1.14.3",
+    "@grpc/proto-loader": "^0.8.0",
     "dotenv": "^17.4.1",
     "express": "^5.2.1",
     "nodemailer": "^8.0.5",
