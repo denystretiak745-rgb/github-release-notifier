@@ -53,6 +53,7 @@ services:
       SCAN_INTERVAL_MS: ${SCAN_INTERVAL_MS:-300000}
       REDIS_URL: ${REDIS_URL:-redis://redis:6379}
       GRPC_PORT: ${GRPC_PORT:-50051}
+      API_KEYS: ${API_KEYS:-}
 
 volumes:
   pgdata:
