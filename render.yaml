@@ -13,6 +13,8 @@ services:
     startCommand: node src/server.js
     healthCheckPath: /api/subscriptions?email=healthcheck@test.com
     envVars:
+      - key: NODE_VERSION
+        value: "22"
       - key: NODE_ENV
         value: production
       - key: DATABASE_URL

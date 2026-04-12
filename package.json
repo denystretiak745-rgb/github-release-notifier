@@ -17,6 +17,9 @@
     "email"
   ],
   "author": "",
+  "engines": {
+    "node": ">=22.0.0"
+  },
   "license": "ISC",
   "description": "API for subscribing to GitHub release notifications via email",
   "dependencies": {
