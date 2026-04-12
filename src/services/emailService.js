@@ -12,8 +12,6 @@ function isSmtpConfigured() {
   const port = Number(env.smtp.port);
   return Boolean(
     env.smtp.host &&
-    env.smtp.user &&
-    env.smtp.pass &&
     Number.isInteger(port) &&
     port > 0
   );
@@ -29,15 +27,20 @@ function getTransporter() {
     if (!isSmtpConfigured()) {
       return null;
     }
-    transporter = nodemailer.createTransport({
+    const transportConfig = {
       host: env.smtp.host,
       port: env.smtp.port,
       secure: env.smtp.port === 465,
-      auth: {
+    };
+
+    if (env.smtp.user && env.smtp.pass) {
+      transportConfig.auth = {
         user: env.smtp.user,
         pass: env.smtp.pass,
-      },
-    });
+      };
+    }
+
+    transporter = nodemailer.createTransport(transportConfig);
   }
   return transporter;
 }
@@ -68,7 +71,7 @@ async function sendConfirmationEmail(to, repo, confirmToken) {
   }
 
   await transport.sendMail({
-    from: env.smtp.user,
+    from: env.smtp.user || 'noreply@github-release-notifier',
     to,
     subject: `Confirm your subscription to ${repo} releases`,
     html: `
@@ -103,7 +106,7 @@ async function sendReleaseNotification(to, repo, tagName, releaseUrl, unsubscrib
   }
 
   await transport.sendMail({
-    from: env.smtp.user,
+    from: env.smtp.user || 'noreply@github-release-notifier',
     to,
     subject: `New release: ${repo} ${tagName}`,
     html: `
