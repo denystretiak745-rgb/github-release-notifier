@@ -3,9 +3,11 @@ const apiKeyAuth = require('../src/middlewares/apiKeyAuth');
 
 describe('apiKeyAuth middleware', () => {
   let req, res, next;
+  let originalApiKeys;
 
   beforeEach(() => {
-    req = { headers: {} };
+    originalApiKeys = env.apiKeys;
+    req = { headers: {}, path: '/subscribe', get: jest.fn() };
     res = {
       status: jest.fn().mockReturnThis(),
       json: jest.fn().mockReturnThis(),
@@ -14,7 +16,7 @@ describe('apiKeyAuth middleware', () => {
   });
 
   afterEach(() => {
-    env.apiKeys = [];
+    env.apiKeys = originalApiKeys;
   });
 
   test('passes through when API_KEYS is not configured', () => {
@@ -28,6 +30,7 @@ describe('apiKeyAuth middleware', () => {
 
   test('returns 401 when API key is missing', () => {
     env.apiKeys = ['valid-key'];
+    req.get.mockReturnValue(undefined);
 
     apiKeyAuth(req, res, next);
 
@@ -38,7 +41,7 @@ describe('apiKeyAuth middleware', () => {
 
   test('returns 403 when API key is invalid', () => {
     env.apiKeys = ['valid-key'];
-    req.headers['x-api-key'] = 'wrong-key';
+    req.get.mockReturnValue('wrong-key');
 
     apiKeyAuth(req, res, next);
 
@@ -49,7 +52,7 @@ describe('apiKeyAuth middleware', () => {
 
   test('passes through with valid API key', () => {
     env.apiKeys = ['valid-key'];
-    req.headers['x-api-key'] = 'valid-key';
+    req.get.mockReturnValue('valid-key');
 
     apiKeyAuth(req, res, next);
 
@@ -59,10 +62,41 @@ describe('apiKeyAuth middleware', () => {
 
   test('accepts any of multiple valid keys', () => {
     env.apiKeys = ['key-one', 'key-two', 'key-three'];
-    req.headers['x-api-key'] = 'key-two';
+    req.get.mockReturnValue('key-two');
 
     apiKeyAuth(req, res, next);
 
     expect(next).toHaveBeenCalled();
+  });
+
+  test('trims whitespace from API key header', () => {
+    env.apiKeys = ['valid-key'];
+    req.get.mockReturnValue('  valid-key  ');
+
+    apiKeyAuth(req, res, next);
+
+    expect(next).toHaveBeenCalled();
+  });
+
+  test('exempts /confirm/ routes from auth', () => {
+    env.apiKeys = ['valid-key'];
+    req.path = '/confirm/some-token-uuid';
+    req.get.mockReturnValue(undefined);
+
+    apiKeyAuth(req, res, next);
+
+    expect(next).toHaveBeenCalled();
+    expect(res.status).not.toHaveBeenCalled();
+  });
+
+  test('exempts /unsubscribe/ routes from auth', () => {
+    env.apiKeys = ['valid-key'];
+    req.path = '/unsubscribe/some-token-uuid';
+    req.get.mockReturnValue(undefined);
+
+    apiKeyAuth(req, res, next);
+
+    expect(next).toHaveBeenCalled();
+    expect(res.status).not.toHaveBeenCalled();
   });
 });
