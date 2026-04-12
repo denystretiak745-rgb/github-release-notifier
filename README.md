@@ -23,6 +23,19 @@ An API that allows users to subscribe to email notifications about new releases 
 
 Full API documentation is available in [swagger.yaml](swagger.yaml).
 
+## Deploy to Render
+
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/denystretiak745-rgb/github-release-notifier)
+
+The repo includes a `render.yaml` blueprint that provisions:
+- **Web service** (free tier) — runs the Node.js API
+- **PostgreSQL database** (free tier) — stores subscriptions
+
+After deploying, set these environment variables in the Render dashboard:
+- `APP_BASE_URL` — your Render service URL (e.g. `https://github-release-notifier-xxxx.onrender.com`)
+- `SMTP_HOST`, `SMTP_USER`, `SMTP_PASS` — your SMTP credentials for sending emails
+- `GITHUB_TOKEN` (optional) — raises GitHub API rate limit from 60 to 5000 req/hr
+
 ## Quick Start with Docker
 
 ```bash
