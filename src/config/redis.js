@@ -17,9 +17,7 @@ function getClient() {
     lazyConnect: true,
   });
 
-  client.on('error', (err) => {
-    console.error('[redis] Connection error:', err.message);
-  });
+  client.on('error', () => {});
 
   client.connect().catch(() => {});
   return client;

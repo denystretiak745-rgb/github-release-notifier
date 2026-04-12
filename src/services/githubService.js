@@ -39,7 +39,8 @@ async function cacheSet(key, value) {
 async function checkRepoExists(repo) {
   const cacheKey = `repo:exists:${repo}`;
   const cached = await cacheGet(cacheKey);
-  if (cached !== null) return cached === 'true';
+  if (cached === 'true') return true;
+  if (cached === 'false') return false;
 
   const headers = { 'Accept': 'application/vnd.github.v3+json' };
   if (env.githubToken) {
