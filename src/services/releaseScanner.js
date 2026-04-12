@@ -2,6 +2,7 @@ const subscriptionRepo = require('../repositories/subscriptionRepository');
 const githubService = require('./githubService');
 const emailService = require('./emailService');
 const env = require('../config/env');
+const { releaseScanDuration } = require('../metrics');
 
 let timeoutId = null;
 let running = false;
@@ -13,6 +14,15 @@ let running = false;
  * @returns {Promise<void>}
  */
 async function scan() {
+  const end = releaseScanDuration.startTimer();
+  try {
+    return await _scan();
+  } finally {
+    end();
+  }
+}
+
+async function _scan() {
   const subscriptions = await subscriptionRepo.findAllConfirmed();
 
   if (subscriptions.length === 0) return;
