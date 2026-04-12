@@ -39,9 +39,8 @@
               </div>
               <div class="mb-3">
                 <label for="sub-repo" class="form-label">Repository</label>
-                <input type="text" class="form-control" id="sub-repo" placeholder="owner/repo" required
-                       pattern="^[a-zA-Z0-9._-]+/[a-zA-Z0-9._-]+$">
-                <div class="form-text">Format: <code>owner/repo</code> (e.g. <code>facebook/react</code>)</div>
+                <input type="text" class="form-control" id="sub-repo" placeholder="owner/repo or GitHub URL" required>
+                <div class="form-text"><code>owner/repo</code> or full URL like <code>https://github.com/facebook/react</code></div>
               </div>
               <button type="submit" class="btn btn-primary w-100" id="sub-btn">Subscribe</button>
             </form>

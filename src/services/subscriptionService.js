@@ -1,5 +1,5 @@
 const crypto = require('crypto');
-const { isValidRepo, isValidEmail } = require('../utils/validators');
+const { isValidEmail, parseRepo } = require('../utils/validators');
 const githubService = require('./githubService');
 const emailService = require('./emailService');
 const subscriptionRepo = require('../repositories/subscriptionRepository');
@@ -12,8 +12,9 @@ const subscriptionRepo = require('../repositories/subscriptionRepository');
  * @returns {Promise<import('../repositories/subscriptionRepository').Subscription>}
  * @throws {Error} 400 if input is invalid, 404 if repo not found, 409 if already subscribed
  */
-async function subscribe(email, repo) {
-  if (!isValidEmail(email) || !isValidRepo(repo)) {
+async function subscribe(email, rawRepo) {
+  const repo = parseRepo(rawRepo);
+  if (!isValidEmail(email) || !repo) {
     const err = new Error('Invalid input');
     err.status = 400;
     throw err;
@@ -128,8 +129,9 @@ async function getSubscriptions(email) {
  * @returns {Promise<void>}
  * @throws {Error} 400 if input is invalid, 404 if subscription not found
  */
-async function removeSubscription(email, repo) {
-  if (!isValidEmail(email) || !isValidRepo(repo)) {
+async function removeSubscription(email, rawRepo) {
+  const repo = parseRepo(rawRepo);
+  if (!isValidEmail(email) || !repo) {
     const err = new Error('Invalid input');
     err.status = 400;
     throw err;
