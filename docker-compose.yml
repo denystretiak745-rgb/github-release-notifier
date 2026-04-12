@@ -19,6 +19,7 @@ services:
     build: .
     ports:
       - "${HOST_PORT:-3000}:3000"
+      - "${GRPC_PORT:-50051}:50051"
     depends_on:
       db:
         condition: service_healthy
@@ -32,6 +33,7 @@ services:
       SMTP_PASS: ${SMTP_PASS:-}
       APP_BASE_URL: ${APP_BASE_URL:-http://localhost:3000}
       SCAN_INTERVAL_MS: ${SCAN_INTERVAL_MS:-300000}
+      GRPC_PORT: ${GRPC_PORT:-50051}
 
 volumes:
   pgdata:
